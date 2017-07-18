@@ -78,7 +78,7 @@ var server = https.createServer(options, app).listen(port, function() {
 
 var wss = new ws.Server({
     server : server,
-    path : '/helloworld'
+    path : '/kurentomcu'
 });
 
 /*
