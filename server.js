@@ -52,7 +52,9 @@ var sessionHandler = session({
     resave : true,
     saveUninitialized : true
 });
+const kilo = 1024;
 
+const BIT_RATE = 4096; //kbps
 app.use(sessionHandler);
 
 /*
@@ -270,30 +272,52 @@ function createMediaElements(pipeline, ws, callback) {
           if (error) {
               return callback(error);
           }
-
-          if (compositeHub) {
-            compositeHub.createHubPort(function(error, hubPort){
-              if (error){
-                return callback(error);
-              }
-              return callback(null, webRtcEndpoint, hubPort);
-            });
-          } else {
-            pipeline.create('Composite', function (error, composite) {
+          var maxbps = Math.floor( BIT_RATE * kilo);
+          webRtcEndpoint.setMinOutputBitrate(maxbps, function (error) {
+              //console.log('[media] Min Output Bitrate (bps) ' + maxbps);
               if (error) {
-                return callback(error);
+                console.log('[media]  Error: ' + error);
               }
-
-              compositeHub = composite;
-
-              composite.createHubPort(function(error, hubPort){
-                if (error){
-                  return callback(error);
+              webRtcEndpoint.setMaxOutputBitrate(maxbps, function (error) {
+                //console.log('[media] Min Output Bitrate (bps) ' + maxbps);
+                if (error) {
+                  console.log('[media]  Error: ' + error);
                 }
-                return callback(null, webRtcEndpoint, hubPort);
-              });
-          });
-      }
+                if (compositeHub) {
+                  compositeHub.createHubPort(function(error, hubPort){
+                    if (error){
+                      return callback(error);
+                    }
+                    hubPort.setMinOutputBitrate(maxbps, function (error) {
+                      hubPort.setMaxOutputBitrate(maxbps, function (error){
+                        return callback(null, webRtcEndpoint, hubPort);
+                      });
+                    });
+                  });
+                }
+                else
+                {
+                  pipeline.create('Composite', function (error, composite) {
+                    if (error) {
+                      return callback(error);
+                    }
+
+                    compositeHub = composite;
+
+                    composite.createHubPort(function(error, hubPort){
+                      if (error){
+                        return callback(error);
+                      }
+                      hubPort.setMinOutputBitrate(maxbps, function (error) {
+                        hubPort.setMaxOutputBitrate(maxbps, function (error){
+                          return callback(null, webRtcEndpoint, hubPort);
+                      });
+                    });
+                  });
+                });
+              }
+            });
+        });
     });
 }
 
