@@ -28,8 +28,8 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED=0;
 
 var argv = minimist(process.argv.slice(2), {
     default: {
-        as_uri: 'https://localhost:8443/',
-        ws_uri: 'ws://localhost:8888/kurento'
+        as_uri: 'https://localhost:8443/',    // Kurento Application IP
+        ws_uri: 'ws://localhost:8888/kurento'    // Kurento Server IP
     }
 });
 
