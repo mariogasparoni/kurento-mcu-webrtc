@@ -75,6 +75,7 @@ function start() {
       remoteVideo: videoOutput,
       onicecandidate : onIceCandidate,
 			mediaConstraints: {
+				audio: true,
 				video: {
 					width: 1280,
 					height: 720
