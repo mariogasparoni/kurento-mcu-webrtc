@@ -54,7 +54,7 @@ var sessionHandler = session({
 });
 const kilo = 1024;
 
-const BIT_RATE = 4096; //kbps
+const BIT_RATE = 320; //kbps
 app.use(sessionHandler);
 
 /*
@@ -232,7 +232,6 @@ function start(sessionId, websocketId, ws, sdpOffer, callback) {
                             id : 'iceCandidate',
                             candidate : candidate
                         }));
-                        candidate.candidate = candidate.candidate.replace('10.0.3.96','10.0.0.2');
                         ws.send(JSON.stringify({
                             id : 'iceCandidate',
                             candidate : candidate
@@ -304,6 +303,30 @@ function createMediaElements(pipeline, ws, callback) {
 
                     compositeHub = composite;
 
+                    if (!compositeHub.outputVideoPort) {
+                      compositeHub.createHubPort(function(error, _outputVideoPort){
+                        if (error){
+                          return callback(error);
+                        }
+
+                        compositeHub.outputVideoPort = _outputVideoPort;
+                        _outputVideoPort.setMinOutputBitrate(maxbps, function (error) {
+                          _outputVideoPort.setMaxOutputBitrate(maxbps, function (error){
+
+                            composite.createHubPort(function(error, hubPort){
+                              if (error){
+                                return callback(error);
+                              }
+                              hubPort.setMinOutputBitrate(maxbps, function (error) {
+                                hubPort.setMaxOutputBitrate(maxbps, function (error){
+                                  return callback(null, webRtcEndpoint, hubPort);
+                                });
+                              });
+                            });
+                        });
+                      });
+                    });
+                  } else {
                     composite.createHubPort(function(error, hubPort){
                       if (error){
                         return callback(error);
@@ -311,9 +334,10 @@ function createMediaElements(pipeline, ws, callback) {
                       hubPort.setMinOutputBitrate(maxbps, function (error) {
                         hubPort.setMaxOutputBitrate(maxbps, function (error){
                           return callback(null, webRtcEndpoint, hubPort);
+                        });
                       });
                     });
-                  });
+                  }
                 });
               }
             });
@@ -327,13 +351,21 @@ function connectMediaElements(webRtcEndpoint, hubPort, callback) {
             return callback(error);
         }
 
-        hubPort.connect(webRtcEndpoint, function (error){
-          if (error) {
-            return callback(error);
-          }
+        if (compositeHub && compositeHub.outputVideoPort) {
+          compositeHub.outputVideoPort.connect(webRtcEndpoint, 'VIDEO', function (error){
+            if (error) {
+              return callback(error);
+            }
 
-          return callback(null);
-        });
+            hubPort.connect(webRtcEndpoint, 'AUDIO', function (error){
+              if (error) {
+                return callback(error);
+              }
+
+              return callback(null);
+            });
+          });
+        }
     });
 }
 

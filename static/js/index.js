@@ -77,8 +77,8 @@ function start() {
 			mediaConstraints: {
 				audio: true,
 				video: {
-					width: 1280,
-					height: 720
+					width: 320,
+					height: 240
 				}
 			}
     }
